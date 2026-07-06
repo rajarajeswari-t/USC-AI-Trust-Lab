@@ -178,6 +178,13 @@ function FullRunner({ modelEntry, modelLabel, setModelLabel, keys, runnable, add
 
         {error && <div className="err">{error}</div>}
 
+        {liveRows.some((r) => r.errored) && (
+          <div className="err" style={{ marginTop: 10 }}>
+            {liveRows.filter((r) => r.errored).length}/{liveRows.length} tests errored.
+            First error: {liveRows.find((r) => r.errored)?.judgeReasoning || "unknown"}
+          </div>
+        )}
+
         {progress && (
           <div style={{ marginTop: 18 }}>
             <div className="row" style={{ justifyContent: "space-between", fontSize: 12 }}>
@@ -223,7 +230,8 @@ function FullRunner({ modelEntry, modelLabel, setModelLabel, keys, runnable, add
         )}
         <div className="feed">
           {liveRows.slice().reverse().map((r, i) => (
-            <div key={liveRows.length - i} className={`feed-row ${r.errored ? "feed-err" : ""}`}>
+            <div key={liveRows.length - i} className={`feed-row ${r.errored ? "feed-err" : ""}`}
+              title={r.errored ? r.judgeReasoning : ""}>
               <span className="mono feed-id">{r.testId}</span>
               <span className="mono feed-pillar">{PILLAR_BY_ID[r.pillarId]?.short}</span>
               <span className="mono feed-mode">{r.mode}</span>

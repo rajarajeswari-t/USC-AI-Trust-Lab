@@ -14,8 +14,9 @@ export const MODEL_REGISTRY = [
   { label: "GPT-4 Turbo", provider: "openai", apiModel: "gpt-4-turbo" },
   { label: "Claude Sonnet 4", provider: "anthropic", apiModel: "claude-sonnet-4-6" },
   { label: "Claude 3.5 Haiku", provider: "anthropic", apiModel: "claude-3-5-haiku-20241022" },
-  { label: "Gemini 1.5 Pro", provider: "google", apiModel: "gemini-1.5-pro" },
-  { label: "Gemini 1.5 Flash", provider: "google", apiModel: "gemini-1.5-flash" },
+  { label: "Gemini 2.5 Flash", provider: "google", apiModel: "gemini-2.5-flash" },
+  { label: "Gemini 2.5 Pro", provider: "google", apiModel: "gemini-2.5-pro" },
+  { label: "Gemini 2.0 Flash", provider: "google", apiModel: "gemini-2.0-flash" },
   { label: "Grok 2", provider: "xai", apiModel: "grok-2-latest" },
   // OpenAI-compatible slot (Together / Groq / OpenRouter / local) — base URL supplied with the key.
   { label: "Custom (OpenAI-compatible)", provider: "openai_compat", apiModel: "" },
@@ -164,8 +165,8 @@ export const JUDGE_REGISTRY = [
   { label: "GPT-4.1 mini", provider: "openai", apiModel: "gpt-4.1-mini", family: "OpenAI" },
   { label: "Claude 3.5 Haiku", provider: "anthropic", apiModel: "claude-3-5-haiku-20241022", family: "Anthropic" },
   { label: "Claude Sonnet 4", provider: "anthropic", apiModel: "claude-sonnet-4-6", family: "Anthropic" },
-  { label: "Gemini 1.5 Pro", provider: "google", apiModel: "gemini-1.5-pro", family: "Google" },
-  { label: "Gemini 1.5 Flash", provider: "google", apiModel: "gemini-1.5-flash", family: "Google" },
+  { label: "Gemini 2.5 Flash", provider: "google", apiModel: "gemini-2.5-flash", family: "Google" },
+  { label: "Gemini 2.0 Flash", provider: "google", apiModel: "gemini-2.0-flash", family: "Google" },
   { label: "Grok 2", provider: "xai", apiModel: "grok-2-latest", family: "xAI" },
 ];
 export const DEFAULT_JUDGE = JUDGE_REGISTRY[0]; // GPT-4o — works with the OpenAI key you have
