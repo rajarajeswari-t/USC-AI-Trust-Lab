@@ -92,18 +92,53 @@ async function callOpenAICompat(apiModel, prompt, keys, signal, opt = {}) {
   return callOpenAI(apiModel, prompt, { openai: keys.openai_compat }, signal, keys.openai_compat_base || "", opt);
 }
 
+// Gemini model IDs churn (Google retires versions), so a hardcoded name can 404.
+// Resolve a requested model against what THIS key can actually call, and cache it.
+const _googleModelCache = {};
+async function resolveGoogleModel(requested, keys, signal) {
+  if (_googleModelCache[requested]) return _googleModelCache[requested];
+  let available = [];
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keys.google}&pageSize=1000`, { signal });
+    if (res.ok) {
+      const data = await res.json();
+      available = (data.models || [])
+        .filter((m) => (m.supportedGenerationMethods || []).includes("generateContent"))
+        .map((m) => m.name.replace(/^models\//, ""));
+    }
+  } catch { /* fall through to requested */ }
+  if (!available.length) return requested;
+  let pick = available.find((m) => m === requested);
+  if (!pick) {
+    const tier = /pro/i.test(requested) ? "pro" : "flash";
+    const junk = /(embedding|aqa|image|imagen|tts|vision|thinking|learnlm)/i;
+    const tierModels = available.filter((m) => /gemini/i.test(m) && m.includes(tier) && !junk.test(m));
+    const stable = tierModels.filter((m) => !/(exp|preview|latest)/i.test(m));
+    // Newest-looking first (higher version strings sort last, so reverse).
+    pick = stable.sort().reverse()[0] || tierModels.sort().reverse()[0]
+        || available.filter((m) => /gemini/i.test(m) && !junk.test(m)).sort().reverse()[0]
+        || available[0];
+  }
+  _googleModelCache[requested] = pick;
+  return pick;
+}
+
 async function callGoogle(apiModel, prompt, keys, signal, opt = {}) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${apiModel}:generateContent?key=${keys.google}`;
   const genCfg = {};
   if (opt.temperature != null) genCfg.temperature = opt.temperature;
   if (opt.maxTokens) genCfg.maxOutputTokens = opt.maxTokens;
   const body = { contents: [{ parts: [{ text: (opt.system ? opt.system + "\n\n" : "") + prompt }] }] };
   if (Object.keys(genCfg).length) body.generationConfig = genCfg;
-  const res = await fetch(url, {
-    method: "POST", signal,
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  const doCall = (model) => fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keys.google}`,
+    { method: "POST", signal, headers: { "content-type": "application/json" }, body: JSON.stringify(body) },
+  );
+  let res = await doCall(apiModel);
+  if (res.status === 404) {
+    // Requested model retired for this key — resolve a live one and retry once.
+    const resolved = await resolveGoogleModel(apiModel, keys, signal);
+    if (resolved && resolved !== apiModel) res = await doCall(resolved);
+  }
   if (!res.ok) throw new Error(`Google ${res.status}: ${(await res.text()).slice(0, 160)}`);
   const data = await res.json();
   return data.candidates?.[0]?.content?.parts?.map((p) => p.text).join("\n").trim() || "";
