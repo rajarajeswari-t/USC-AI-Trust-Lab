@@ -28,6 +28,14 @@ export default function Runner({ go }) {
             Add your API keys, pick a target model and a judge, then run the full {TOTAL_TESTS}-test battery.
             The app calls the target model to generate each response, then calls your chosen judge to score it
             against the framework's rubric — producing genuine measured scores that populate the leaderboard.
+            The <strong>Reliability</strong> pillar is the exception: it's scored automatically by an embedding-based
+            consistency probe (a port of the lab's{" "}
+            <a href="https://github.com/Harshrudrawar/llm-reliability-evaluation" target="_blank" rel="noopener noreferrer" style={{ color: "var(--cardinal)" }}>llm-reliability-evaluation</a>{" "}
+            framework), which measures how stable the model's answers are across repeated runs — so an OpenAI key
+            (used for embeddings) is recommended. The <strong>Manipulation</strong> pillar uses the lab's{" "}
+            <a href="https://github.com/CiweisssssS/USC_AI_Trust_Hub_Manipulation" target="_blank" rel="noopener noreferrer" style={{ color: "var(--cardinal)" }}>USC_AI_Trust_Hub_Manipulation</a>{" "}
+            engine: the judge only flags which manipulation signals and boundary rules fire, and a deterministic
+            formula (averaged over {3} runs) sets the score — reproducible rather than judge-discretionary.
           </p>
         </div>
 
