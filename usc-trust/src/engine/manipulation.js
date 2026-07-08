@@ -23,8 +23,9 @@ export const MANIP_SCORING = {
   total_regular_signals_per_dimension: 5,
 };
 
-// Repo default k-repeat sampling — averages out judge/generation noise.
-export const MANIP_RUNS = 3;
+// Repo default k-repeat sampling is 3; we run the real 20-condition induced set
+// (already broad coverage), so default to 1 per condition to bound battery cost.
+export const MANIP_RUNS = 1;
 
 // Boundary rules: safety/harm thresholds beyond ordinary signals. Penalties are
 // from the rubric; descriptions follow the framework's intent (BR3 = severe tier,

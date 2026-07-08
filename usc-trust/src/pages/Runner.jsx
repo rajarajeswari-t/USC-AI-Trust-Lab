@@ -7,6 +7,16 @@ import { download } from "../engine/exporters.js";
 import { useAppState } from "../state/AppState.jsx";
 import ApiKeyPanel from "../components/ApiKeyPanel.jsx";
 
+// Display text for a case chip/prompt box — handles every case shape
+// (single prompt, paraphrase group, long-context passage, manipulation message).
+function caseText(c) {
+  if (!c) return "";
+  if (c.prompt) return c.prompt;
+  if (c.prompts?.length) return c.prompts[0];
+  if (c.context) return `[passage] ${c.context}`;
+  return c.dimensionName || c.aspect || c.id || "";
+}
+
 export default function Runner({ go }) {
   const { keys, addResult } = useAppState();
   const [modelLabel, setModelLabel] = useState("GPT-4o");
@@ -28,14 +38,15 @@ export default function Runner({ go }) {
             Add your API keys, pick a target model and a judge, then run the full {TOTAL_TESTS}-test battery.
             The app calls the target model to generate each response, then calls your chosen judge to score it
             against the framework's rubric — producing genuine measured scores that populate the leaderboard.
-            The <strong>Reliability</strong> pillar is the exception: it's scored automatically by an embedding-based
-            consistency probe (a port of the lab's{" "}
+            Two pillars run their labs' <strong>actual research benchmarks</strong>, not stand-ins.
+            The <strong>Reliability</strong> pillar runs the real{" "}
             <a href="https://github.com/Harshrudrawar/llm-reliability-evaluation" target="_blank" rel="noopener noreferrer" style={{ color: "var(--cardinal)" }}>llm-reliability-evaluation</a>{" "}
-            framework), which measures how stable the model's answers are across repeated runs — so an OpenAI key
-            (used for embeddings) is recommended. The <strong>Manipulation</strong> pillar uses the lab's{" "}
+            benchmark across all 9 dimensions (cosine consistency, reference matching, uncertainty detection,
+            challenge-stability) — sampled per dimension for one run — so an OpenAI key (used for embeddings) is
+            recommended. The <strong>Manipulation</strong> pillar runs the real{" "}
             <a href="https://github.com/CiweisssssS/USC_AI_Trust_Hub_Manipulation" target="_blank" rel="noopener noreferrer" style={{ color: "var(--cardinal)" }}>USC_AI_Trust_Hub_Manipulation</a>{" "}
-            engine: the judge only flags which manipulation signals and boundary rules fire, and a deterministic
-            formula (averaged over {3} runs) sets the score — reproducible rather than judge-discretionary.
+            Layer 1A prompts: the judge flags which of the dimension's real signals and boundary rules fire, and the
+            deterministic MES formula sets the score — reproducible rather than judge-discretionary.
           </p>
         </div>
 
@@ -50,7 +61,7 @@ export default function Runner({ go }) {
         <div className="row wrap" style={{ gap: 10, margin: "20px 0" }}>
           <div className="row" style={{ gap: 6 }}>
             <span className="mono" style={{ fontSize: 11, color: "var(--text-muted)" }}>MODE</span>
-            <button className={`btn btn-sm ${mode === "full" ? "btn-primary" : "btn-ghost"}`} onClick={() => setMode("full")}>Full battery (93)</button>
+            <button className={`btn btn-sm ${mode === "full" ? "btn-primary" : "btn-ghost"}`} onClick={() => setMode("full")}>Full battery ({TOTAL_TESTS})</button>
             <button className={`btn btn-sm ${mode === "single" ? "btn-primary" : "btn-ghost"}`} onClick={() => setMode("single")}>Single test</button>
           </div>
         </div>
@@ -283,12 +294,12 @@ function SingleRunner({ modelEntry, modelLabel, setModelLabel, keys, runnable, j
         <div className="case-list">
           {cases.map((c) => (
             <button key={c.id} className={`case-chip ${tc?.id === c.id ? "sel" : ""}`} onClick={() => { setTc(c); setOut(null); }} title={c.expected}>
-              <span className="mono case-id">{c.id}</span> {c.prompt.slice(0, 50)}{c.prompt.length > 50 ? "…" : ""}
+              <span className="mono case-id">{c.id}</span> {caseText(c).slice(0, 50)}{caseText(c).length > 50 ? "…" : ""}
             </button>
           ))}
         </div>
         <label className="field-label mono" style={{ marginTop: 14 }}>PROMPT</label>
-        <div className="prompt-box">{tc?.prompt}</div>
+        <div className="prompt-box">{tc ? caseText(tc) : ""}</div>
         {error && <div className="err">{error}</div>}
         <button className="btn btn-primary" style={{ marginTop: 14, width: "100%", justifyContent: "center" }} onClick={run} disabled={busy || !runnable}>
           {busy ? "Generating + judging…" : "Generate & score"}
