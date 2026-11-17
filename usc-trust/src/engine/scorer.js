@@ -11,6 +11,7 @@ import { generateResponse, judgeComplete, DEFAULT_JUDGE, familyOf } from "./prov
 import { embedTexts, meanPairwiseCosine } from "./embeddings.js";
 import { computeManipulationCase, riskToScore, MANIP_RUNS } from "./manipulation.js";
 import { scoreReliabilityCase } from "./reliabilityScoring.js";
+import { scoreCareCase } from "./careScoring.js";
 import {
   ternaryJudgePrompt, careJudgePrompt, deductionJudgePrompt, manipulationSignalsJudgePrompt,
   mirrorJudgePrompt, multiTurnJudgePrompt, consistencyJudgePrompt,
@@ -102,6 +103,7 @@ export async function scoreCase(pillar, testCase, modelEntry, keys, opts = {}) {
   let heuristicText = "";   // representative text for heuristic
   let judge = { score: 0, reasoning: "" };
   let detail = {};
+  let override = null;      // engines that apply their own blend + gates (Care)
 
   if (caseMode === "single") {
     const resp = await gen(testCase.prompt);
@@ -142,6 +144,16 @@ export async function scoreCase(pillar, testCase, modelEntry, keys, opts = {}) {
     heuristicText = firstResp;
     judge = { score: riskToScore(meanRisk), reasoning: `MES · risk ${meanRisk.toFixed(3)} · ${runs[0].reasoning}` };
     detail = { response: firstResp, method: "manipulation_mes", dimension: testCase.dimension, meanRisk: round(meanRisk, 4), runs };
+  }
+  else if (caseMode === "care") {
+    // Care — benchmark built from the Care Pillar Literature Review, scored by
+    // careScoring.js: multi-turn escalation + pressure follow-up, narrow
+    // heuristic checks (25%), 3-domain judge (75%), critical-failure gates,
+    // and worst-case scoring across matched demographic variants.
+    const careRes = await scoreCareCase(testCase, gen, (promptText) => callJudge(promptText, judgeOpts));
+    override = careRes;
+    judge = { score: careRes.judgeScore, reasoning: careRes.detail.reasoning || "" };
+    detail = { method: careRes.detail.method, careAspect: testCase.aspect, gated: careRes.gated, ...careRes.detail };
   }
   else if (caseMode === "rel") {
     // Reliability — real benchmark of Harshrudrawar/llm-reliability-evaluation,
@@ -205,8 +217,8 @@ export async function scoreCase(pillar, testCase, modelEntry, keys, opts = {}) {
     throw new Error(`Unknown mode: ${caseMode}`);
   }
 
-  const heuristic = keywordHeuristic(pillar.id, heuristicText, testCase.aspect || "");
-  const hybrid = combineHybrid(pillar.id, heuristic, judge.score);
+  const heuristic = override ? override.heuristicScore : keywordHeuristic(pillar.id, heuristicText, testCase.aspect || "");
+  const hybrid = override ? override.score : combineHybrid(pillar.id, heuristic, judge.score);
   return {
     pillarId: pillar.id, testId: testCase.id, aspect: testCase.aspect || testCase.dimension || caseMode,
     mode: caseMode,
@@ -229,6 +241,11 @@ export function aggregate(modelName, provider, perTest) {
     const avg = rows.reduce((a,r)=>a+r.hybridScore,0)/rows.length;
     const pPassed = rows.filter(r=>r.pass).length;
     pillars[p.id] = { score: round(avg), passed: pPassed, total: rows.length };
+    if (p.id === "care") {
+      // Surface gate hits and review load alongside the average (report failure modes, not only the composite).
+      pillars[p.id].criticalFailures = rows.filter((r) => r.gated).length;
+      pillars[p.id].needsHumanReview = rows.filter((r) => r.needsHumanReview).length;
+    }
     sum += avg; passed += pPassed; used++;
   }
   const overall = round(used ? sum/used : 0);

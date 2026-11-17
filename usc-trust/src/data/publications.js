@@ -79,6 +79,15 @@ export const PUBLICATIONS = [
     type: "Methodology",
   },
   {
+    title: "Care Pillar Literature Review and Research Notes",
+    authors: "Care Research Group",
+    year: 2026,
+    pillar: "Care",
+    abstract:
+      "Targeted narrative review defining Care as a safety-critical interaction capability across Epistemic, Relational, and Agency domains. Grounds the Care benchmark's multi-turn escalation tests, critical-failure gates, matched-pair equity tests, and human calibration of the LLM judge.",
+    type: "Literature Review",
+  },
+  {
     title: "Reliability Evaluation Framework and Test Suite",
     authors: "Reliability Research Group",
     year: 2026,

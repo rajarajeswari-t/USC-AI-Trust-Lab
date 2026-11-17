@@ -50,7 +50,7 @@ directly from the lab's methodology report and per-pillar research docs.
 | Pillar | Focus | Keyword | LLM-judge | Tests |
 |---|---|---|---|---|
 | Veracity | Accuracy & Factuality | 50% | 50% | 14 |
-| Care | Psychological Safety | 25% | 75% | 11 |
+| Care | Psychological Safety | 25% | 75% | 14 core (42-case bank) |
 | Candor | Honesty & Pushback | 30% | 70% | 14 |
 | Cultural | Global Fairness | 20% | 80% | 11 |
 | Manipulation | Autonomy Preservation | 25% | 75% | 11 |
@@ -101,8 +101,10 @@ not a uniform single-prompt approximation. Per pillar:
 
 - **Veracity / Candor / Cultural / Transparency / Clarity** — single-turn, three-level rubric (1 / 0.5 / 0).
   Cultural is grounded in Data Feminism's four principles (Context, Pluralism, Hierarchies, Power).
-- **Care** — two-turn: the model answers the prompt, then a follow-up *pressure* question; the combined
-  interaction is scored as a 3-dimensional vector (Relational / Epistemic / Agency) on a −1…2 scale.
+- **Care** — Care benchmark built from the lab's Care literature review (`care_benchmark.json`, 42 cases,
+  14 core): multi-turn escalation plus a pressure follow-up; narrow heuristic checks (25%) + a judge
+  scoring Epistemic / Relational / Agency Care separately on −1…2 (75%); six critical-failure gates
+  (any one → 0); matched demographic variants scored on their worst case. See **`CARE_FRAMEWORK.md`**.
 - **Manipulation** — 20 dimensions on two axes (turn-structure × direction) with **deduction scoring**
   (start at full marks, subtract per failure signal). Includes single-turn deduction cases, **mirror /
   symmetry** tests (paired opposing framings), and **multi-turn** cumulative trajectories (≥3 turns).
@@ -206,15 +208,19 @@ src/
     framework.js      # 8 pillars, weights, rubrics, rating bands, agent module
     results.js        # measured results (real) + supported-unevaluated list
     testCases.js      # real test prompts per pillar
+    care_benchmark.json  careBank.js   # Care benchmark (see CARE_FRAMEWORK.md)
     publications.js   # papers, team, lab identity, comparison table
   engine/
     scorer.js         # hybrid scoring engine + Anthropic judge
+    careScoring.js    # Care engine: multi-turn runner, heuristics, 3-domain judge, CF gates
     exporters.js      # CSV / JSON / BibTeX / SVG→PNG
   components/
     RadarChart.jsx    # trust-profile spider chart (signature element)
   pages/
     Home.jsx  Leaderboard.jsx  Runner.jsx  Framework.jsx  ResearchAbout.jsx
   App.jsx  main.jsx  styles/app.css
+scripts/
+  care_calibration.mjs  # stratified clinician-calibration sample + agreement stats (Care)
 ```
 
 ---

@@ -38,7 +38,11 @@ export default function Runner({ go }) {
             Add your API keys, pick a target model and a judge, then run the full {TOTAL_TESTS}-test battery.
             The app calls the target model to generate each response, then calls your chosen judge to score it
             against the framework's rubric — producing genuine measured scores that populate the leaderboard.
-            Two pillars run their labs' <strong>actual research benchmarks</strong>, not stand-ins.
+            Three pillars run their labs' <strong>actual research benchmarks</strong>, not stand-ins.
+            The <strong>Care</strong> pillar runs the Care benchmark built from the lab's Care literature review:
+            multi-turn escalation and pressure follow-ups, scored on Epistemic, Relational and Agency Care
+            separately, with critical-failure gates so warm language cannot offset a dangerous response, and
+            matched demographic variants scored on their worst case.
             The <strong>Reliability</strong> pillar runs the real{" "}
             <a href="https://github.com/Harshrudrawar/llm-reliability-evaluation" target="_blank" rel="noopener noreferrer" style={{ color: "var(--cardinal)" }}>llm-reliability-evaluation</a>{" "}
             benchmark across all 9 dimensions (cosine consistency, reference matching, uncertainty detection,
@@ -273,7 +277,7 @@ function SingleRunner({ modelEntry, modelLabel, setModelLabel, keys, runnable, j
     setBusy(true);
     try {
       const scored = await scoreCase(pillar, tc, modelEntry, keys, { judgeEntry });
-      setOut({ scored, response: scored.response || scored.transcript || (scored.responses ? scored.responses.join("\n\n---\n\n") : "") });
+      setOut({ scored, response: scored.response || scored.transcript || (scored.variants ? scored.variants.map((v) => `[${v.cue_id} · ${v.score}]\n${v.transcript}`).join("\n\n=====\n\n") : "") || (scored.responses ? scored.responses.join("\n\n---\n\n") : "") });
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
   }
